@@ -247,9 +247,9 @@ def link_unlinked_timeframes(symbol):
         linked_count = 0
         
         # Get all higher timeframe candles for efficient lookup
-        higher_tf_enum = TimeframeEnum(higher_tf)
+        # Higher timeframe is already an enum from the hierarchy
         higher_tf_candles = {}
-        for candle in Candle.query.filter_by(symbol=symbol, timeframe=higher_tf_enum).all():
+        for candle in Candle.query.filter_by(symbol=symbol, timeframe=higher_tf).all():
             higher_tf_candles[candle.timestamp] = candle
             
         logger.info(f"Found {len(higher_tf_candles)} {higher_tf} candles")
