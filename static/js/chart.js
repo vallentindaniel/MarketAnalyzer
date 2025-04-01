@@ -20,54 +20,74 @@ class CandlestickChart {
             return;
         }
 
-        // Create chart
-        this.chart = LightweightCharts.createChart(this.container, {
-            width: this.container.clientWidth,
-            height: 500,
-            layout: {
-                backgroundColor: '#131722',
-                textColor: '#d1d4dc',
-            },
-            grid: {
-                vertLines: {
-                    color: 'rgba(42, 46, 57, 0.5)',
+        try {
+            // Check if LightweightCharts is loaded
+            if (typeof LightweightCharts === 'undefined') {
+                console.error('LightweightCharts library not loaded');
+                return;
+            }
+
+            // Create chart using the latest API
+            this.chart = LightweightCharts.createChart(this.container, {
+                width: this.container.clientWidth,
+                height: 500,
+                layout: {
+                    background: { color: '#131722' },
+                    textColor: '#d1d4dc',
                 },
-                horzLines: {
-                    color: 'rgba(42, 46, 57, 0.5)',
+                grid: {
+                    vertLines: {
+                        color: 'rgba(42, 46, 57, 0.5)',
+                    },
+                    horzLines: {
+                        color: 'rgba(42, 46, 57, 0.5)',
+                    },
                 },
-            },
-            timeScale: {
-                timeVisible: true,
-                secondsVisible: false,
-            },
-        });
+                timeScale: {
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
+            });
 
-        // Add candlestick series
-        this.candleSeries = this.chart.addCandlestickSeries({
-            upColor: '#26a69a',
-            downColor: '#ef5350',
-            borderVisible: false,
-            wickUpColor: '#26a69a',
-            wickDownColor: '#ef5350',
-        });
+            // Add candlestick series
+            this.candleSeries = this.chart.addCandlestickSeries({
+                upColor: '#26a69a',
+                downColor: '#ef5350',
+                borderVisible: false,
+                wickUpColor: '#26a69a',
+                wickDownColor: '#ef5350',
+            });
 
-        // Add volume series as a histogram below the chart
-        this.volumeSeries = this.chart.addHistogramSeries({
-            color: '#26a69a',
-            priceFormat: {
-                type: 'volume',
-            },
-            priceScaleId: '',
-            scaleMargins: {
-                top: 0.8,
-                bottom: 0,
-            },
-        });
+            // Add volume series as a histogram below the chart
+            this.volumeSeries = this.chart.addHistogramSeries({
+                color: '#26a69a',
+                priceFormat: {
+                    type: 'volume',
+                },
+                priceScaleId: '',
+                scaleMargins: {
+                    top: 0.8,
+                    bottom: 0,
+                },
+            });
 
-        // Handle resize
-        window.addEventListener('resize', () => {
-            this.chart.resize(this.container.clientWidth, 500);
-        });
+            // Handle resize
+            window.addEventListener('resize', () => {
+                this.chart.resize(this.container.clientWidth, 500);
+            });
+            
+            console.log("Chart initialized successfully");
+        } catch (error) {
+            console.error('Error initializing chart:', error);
+            
+            // Create a fallback message for the user
+            this.container.innerHTML = `
+                <div class="alert alert-warning">
+                    <h4>Chart loading error</h4>
+                    <p>There was an error loading the chart component. Please make sure you have uploaded data and try refreshing the page.</p>
+                </div>
+            `;
+        }
     }
 
     /**
