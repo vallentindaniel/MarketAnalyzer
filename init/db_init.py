@@ -2,7 +2,6 @@
 Database initialization module
 
 This module initializes the database connection and creates tables.
-It supports both PostgreSQL and MySQL databases.
 """
 import os
 import sys
@@ -20,29 +19,17 @@ load_dotenv()
 
 def get_database_url():
     """
-    Get the database URL from environment variables
-    
-    Supports PostgreSQL (default) and MySQL configurations
+    Get the database URL from environment variables for MySQL
     """
-    db_type = os.environ.get("DB_TYPE", "postgresql")
+    # Use MySQL
+    host = os.environ.get("MYSQL_HOST", "localhost")
+    port = os.environ.get("MYSQL_PORT", "3306")
+    user = os.environ.get("MYSQL_USER", "user1")
+    password = os.environ.get("MYSQL_PASSWORD", "user1")
+    database = os.environ.get("MYSQL_DATABASE", "market_analyzer")
     
-    if db_type.lower() == "postgresql":
-        # Use PostgreSQL
-        return os.environ.get("DATABASE_URL")
-    elif db_type.lower() == "mysql":
-        # Use MySQL
-        host = os.environ.get("MYSQL_HOST", "localhost")
-        port = os.environ.get("MYSQL_PORT", "3306")
-        user = os.environ.get("MYSQL_USER")
-        password = os.environ.get("MYSQL_PASSWORD")
-        database = os.environ.get("MYSQL_DATABASE")
-        
-        if not all([user, password, database]):
-            raise ValueError("MYSQL_USER, MYSQL_PASSWORD, and MYSQL_DATABASE environment variables are required")
-        
-        return f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
-    else:
-        raise ValueError(f"Unsupported DB_TYPE: {db_type}. Must be 'postgresql' or 'mysql'")
+    # Build the MySQL connection URL
+    return f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
 
 def init_database():
     """Initialize database connection and create tables"""

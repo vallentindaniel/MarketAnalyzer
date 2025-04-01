@@ -27,14 +27,15 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "market_analyzer_secret_key")
 
-# Configure database with support for both PostgreSQL and MySQL
-# Get database connection URL from the environment variable
+# Configure PostgreSQL database connection (provided by Replit)
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
     logger.warning("DATABASE_URL environment variable not set, using fallback")
     DATABASE_URL = "sqlite:///instance/forex_analyzer.db"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+
+logger.info("Using PostgreSQL database from Replit environment")
 
 # Common configuration
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
