@@ -2,6 +2,8 @@
 
 A web application for forex market analysis that helps traders identify price action patterns, Fair Value Gaps (FVGs), and potential trading opportunities through advanced data processing and visualization.
 
+![Market Analyzer](static/img/market_analyzer_screenshot.png)
+
 ## Features
 
 - Upload and process forex candle data from CSV files
@@ -10,12 +12,13 @@ A web application for forex market analysis that helps traders identify price ac
 - Detect Fair Value Gaps and calculate fill percentages
 - Find trade opportunities based on CHoCH patterns and FVGs
 - Track trade statistics with 1:2 risk-reward ratio
-- Interactive chart visualization
+- Interactive chart visualization with LightweightCharts
+- Dark theme UI with Bootstrap
 
 ## Key Technologies
 
 - Backend: Python/Flask
-- Database: SQLite or MySQL (configurable)
+- Database: PostgreSQL (default), MySQL (configurable)
 - Frontend: JavaScript with LightweightCharts
 - UI: Bootstrap CSS
 
@@ -40,7 +43,8 @@ A web application for forex market analysis that helps traders identify price ac
 
 The application can be configured using environment variables:
 
-- `DB_TYPE`: Database type to use ('sqlite' or 'mysql', default: 'sqlite')
+- `DB_TYPE`: Database type to use ('postgresql' or 'mysql', default: 'postgresql')
+- `DATABASE_URL`: PostgreSQL connection URL (used when DB_TYPE=postgresql)
 - `MYSQL_HOST`: MySQL host (default: 'localhost')
 - `MYSQL_PORT`: MySQL port (default: 3306)
 - `MYSQL_USER`: MySQL username
@@ -48,9 +52,18 @@ The application can be configured using environment variables:
 - `MYSQL_DATABASE`: MySQL database name
 - `SESSION_SECRET`: Secret key for Flask sessions
 
+For more detailed database configuration options, see [Database Configuration Guide](docs/database_config.md).
+
 Create a `.env` file in the root directory with these variables.
 
 ## Database Structure
+
+The application uses a relational database with the following main tables:
+
+1. **Candles**: Stores price candle data across all timeframes
+2. **PriceActionPatterns**: Stores identified price patterns linked to candles
+3. **FairValueGaps**: Stores FVGs identified in the market
+4. **TradeOpportunities**: Stores potential trade setups based on patterns and FVGs
 
 The application uses a hierarchical candle model to represent different timeframes:
 - 1m candles link to 5m candles
@@ -60,6 +73,24 @@ The application uses a hierarchical candle model to represent different timefram
 - 1H candles link to 4H candles
 
 This is implemented through parent-child relationships using foreign keys.
+
+## Price Action Patterns
+
+The analyzer identifies the following price action patterns:
+
+- **HH (Higher High)**: A peak that's higher than the previous peak
+- **HL (Higher Low)**: A trough that's higher than the previous trough
+- **LH (Lower High)**: A peak that's lower than the previous peak
+- **LL (Lower Low)**: A trough that's lower than the previous trough
+- **BOS (Break of Structure)**: When price breaks above a previous high or below a previous low
+- **CHoCH (Change of Character)**: A pattern that indicates a potential change in trend direction
+
+## Fair Value Gaps (FVGs)
+
+FVGs are areas on the chart where price has moved so quickly that it has left a gap. Types of FVGs:
+
+- **Bullish FVG**: When the low of a candle is higher than the high of the candle two bars later
+- **Bearish FVG**: When the high of a candle is lower than the low of the candle two bars later
 
 ## Usage
 
@@ -74,12 +105,28 @@ This is implemented through parent-child relationships using foreign keys.
 ## Data Format
 
 The CSV file should contain the following columns:
-- timestamp: Date and time
+- timestamp: Date and time (in a format parseable by pandas)
 - open: Opening price
 - high: High price
 - low: Low price
 - close: Closing price
 - volume: Volume
+
+Example:
+```
+timestamp,open,high,low,close,volume
+2025-03-15 12:00:00,1.1234,1.1241,1.1232,1.1238,86
+2025-03-15 12:01:00,1.1238,1.1245,1.1237,1.1243,93
+```
+
+## Trade Opportunities
+
+The system identifies trade opportunities based on:
+1. CHoCH patterns on a higher timeframe (typically 15m)
+2. FVG on a lower timeframe
+3. Entry price at the FVG level
+4. Stop loss based on recent price action
+5. Take profit with a 1:2 risk-reward ratio
 
 ## Development
 
@@ -92,6 +139,22 @@ Or simply:
 ```
 python main.py
 ```
+
+## API Endpoints
+
+The application provides the following API endpoints:
+
+- `POST /api/upload`: Upload and process CSV data
+- `GET /api/candles`: Get candles for a specific symbol and timeframe
+- `GET /api/timeframes`: Get available timeframes for a symbol
+- `POST /api/analyze/price-action`: Analyze price action patterns
+- `POST /api/analyze/fvg`: Analyze Fair Value Gaps
+- `POST /api/analyze/opportunities`: Find trade opportunities
+- `GET /api/statistics`: Get trade statistics
+- `GET /api/patterns`: Get price action patterns
+- `GET /api/fvgs`: Get Fair Value Gaps
+- `GET /api/opportunities`: Get trade opportunities
+- `POST /api/link-timeframes`: Link candles across timeframes
 
 ## License
 

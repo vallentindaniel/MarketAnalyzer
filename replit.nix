@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.cairo
     pkgs.mysql-client
     pkgs.mysql
     pkgs.rustc

@@ -1,3 +1,8 @@
+"""
+Market Analyzer - Application Routes
+
+This module defines all the routes and API endpoints for the application.
+"""
 import os
 import pandas as pd
 from flask import render_template, request, jsonify, flash, session
@@ -5,14 +10,18 @@ from werkzeug.utils import secure_filename
 import tempfile
 import logging
 
+# Set up logger
+logger = logging.getLogger(__name__)
+
+# Import database and models
 from app import db
 from models import Candle, PriceActionPattern, FairValueGap, TradeOpportunity
+
+# Import services
 from services.candle_service import process_csv_data, generate_higher_timeframe_candles, link_unlinked_timeframes
 from services.price_action_service import identify_price_action_patterns, validate_patterns
 from services.fvg_service import identify_fair_value_gaps
 from services.trade_service import identify_trade_opportunities, get_trade_statistics
-
-logger = logging.getLogger(__name__)
 
 def register_routes(app):
     @app.route('/')
