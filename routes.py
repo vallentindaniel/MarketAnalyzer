@@ -98,6 +98,42 @@ def register_routes(app):
             logger.error(f"Error retrieving candles: {str(e)}")
             return jsonify({'error': str(e)}), 500
     
+    @app.route('/api/timeframes', methods=['GET'])
+    def get_timeframes():
+        try:
+            symbol = request.args.get('symbol', 'EUR/USD')
+            
+            # Get all available timeframes for the symbol
+            timeframes = db.session.query(Candle.timeframe_str)\
+                .filter_by(symbol=symbol)\
+                .distinct()\
+                .all()
+            
+            # Count candles in each timeframe
+            result = []
+            for tf in timeframes:
+                timeframe = tf[0]  # Extract the string from the tuple
+                count = Candle.query.filter_by(symbol=symbol, timeframe_str=timeframe).count()
+                
+                # Get parent-child relationships
+                linked_count = Candle.query.filter(
+                    Candle.symbol == symbol,
+                    Candle.timeframe_str == timeframe,
+                    Candle.parent_candle_id.isnot(None)
+                ).count()
+                
+                result.append({
+                    'timeframe': timeframe,
+                    'candleCount': count,
+                    'linkedCount': linked_count
+                })
+            
+            return jsonify(result)
+        
+        except Exception as e:
+            logger.error(f"Error retrieving timeframes: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+    
     @app.route('/api/analyze/price-action', methods=['POST'])
     def analyze_price_action():
         try:

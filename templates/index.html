@@ -26,10 +26,16 @@
                         <div class="form-text">CSV should contain: timestamp, open, high, low, close, volume</div>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary" id="upload-btn">
-                        <i class="fas fa-upload me-2"></i>Upload & Process
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" id="upload-btn">
+                            <i class="fas fa-upload me-2"></i>Upload & Process
+                        </button>
+                        <button type="button" class="btn btn-outline-info" id="check-timeframes-btn">
+                            <i class="fas fa-clock me-2"></i>Check Timeframes
+                        </button>
+                    </div>
                     <div id="upload-status" class="mt-2"></div>
+                    <div id="timeframes-status" class="mt-2"></div>
                 </form>
             </div>
         </div>

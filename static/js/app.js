@@ -77,6 +77,58 @@ document.addEventListener('DOMContentLoaded', function() {
         chart.loadCandleData(symbol, timeframe);
     });
     
+    // Handle check timeframes button
+    document.getElementById('check-timeframes-btn').addEventListener('click', function() {
+        const symbol = document.getElementById('currency-select').value;
+        
+        // Show loading state
+        const timeframesStatus = document.getElementById('timeframes-status');
+        timeframesStatus.textContent = 'Checking available timeframes...';
+        this.disabled = true;
+        
+        fetch(`/api/timeframes?symbol=${encodeURIComponent(symbol)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert('danger', `Error: ${data.error}`);
+                    timeframesStatus.textContent = 'Failed to check timeframes';
+                } else {
+                    // Create a table to display timeframe information
+                    let timeframeInfo = '<div class="mt-3"><h6>Available Timeframes</h6>';
+                    
+                    if (data.length === 0) {
+                        timeframeInfo += '<p>No timeframes available. Please upload data first.</p>';
+                    } else {
+                        timeframeInfo += '<div class="table-responsive"><table class="table table-sm table-hover"><thead><tr>' +
+                            '<th>Timeframe</th><th>Candle Count</th><th>Linked Candles</th></tr></thead><tbody>';
+                            
+                        data.forEach(tf => {
+                            timeframeInfo += `<tr>
+                                <td>${tf.timeframe}</td>
+                                <td>${tf.candleCount}</td>
+                                <td>${tf.linkedCount}</td>
+                            </tr>`;
+                        });
+                        
+                        timeframeInfo += '</tbody></table></div>';
+                    }
+                    
+                    timeframeInfo += '</div>';
+                    timeframesStatus.innerHTML = timeframeInfo;
+                    
+                    // Show successful check message
+                    showAlert('info', `Found ${data.length} timeframes for ${symbol}`);
+                }
+                this.disabled = false;
+            })
+            .catch(error => {
+                console.error('Timeframe check error:', error);
+                showAlert('danger', 'Failed to check timeframes. See console for details.');
+                timeframesStatus.textContent = 'Error checking timeframes';
+                this.disabled = false;
+            });
+    });
+    
     // Handle Price Action Analysis
     document.getElementById('analyze-price-action-btn').addEventListener('click', function() {
         const symbol = document.getElementById('currency-select').value;
