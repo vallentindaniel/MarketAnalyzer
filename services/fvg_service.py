@@ -31,7 +31,7 @@ def identify_fair_value_gaps(symbol, timeframe):
         raise ValueError(f"Unsupported timeframe: {timeframe}")
     
     # Get candles for the specified symbol and timeframe
-    candles = Candle.query.filter_by(symbol=symbol, timeframe=candle_tf_enum).order_by(Candle.timestamp).all()
+    candles = Candle.query.filter_by(symbol=symbol, timeframe_str=candle_tf_enum.value).order_by(Candle.timestamp).all()
     
     if len(candles) < 3:
         logger.warning(f"Not enough candles to identify FVGs for {symbol} {timeframe}")
@@ -40,7 +40,7 @@ def identify_fair_value_gaps(symbol, timeframe):
     fvgs = []
     
     # Find all price action patterns for this timeframe
-    patterns = PriceActionPattern.query.filter_by(timeframe=timeframe_enum).all()
+    patterns = PriceActionPattern.query.filter_by(timeframe_str=timeframe_enum.value).all()
     pattern_map = {p.candle_id: p for p in patterns}
     
     # Look for FVGs in the candle data
@@ -62,8 +62,8 @@ def identify_fair_value_gaps(symbol, timeframe):
                 # Use a recent pattern if one isn't directly associated
                 recent_pattern = PriceActionPattern.query.join(Candle).\
                     filter(Candle.symbol == symbol, 
-                           Candle.timeframe == candle_tf_enum,
-                           PriceActionPattern.timeframe == timeframe_enum,
+                           Candle.timeframe_str == candle_tf_enum.value,
+                           PriceActionPattern.timeframe_str == timeframe_enum.value,
                            Candle.timestamp < candle1.timestamp).\
                     order_by(Candle.timestamp.desc()).first()
                 
@@ -79,7 +79,7 @@ def identify_fair_value_gaps(symbol, timeframe):
                     start_price=candle1.low_price,
                     end_price=candle3.high_price,
                     fill_percentage=0.0,
-                    timeframe=timeframe_enum
+                    timeframe_str=timeframe_enum.value
                 )
                 fvgs.append(fvg)
         
@@ -96,8 +96,8 @@ def identify_fair_value_gaps(symbol, timeframe):
                 # Use a recent pattern if one isn't directly associated
                 recent_pattern = PriceActionPattern.query.join(Candle).\
                     filter(Candle.symbol == symbol, 
-                           Candle.timeframe == candle_tf_enum,
-                           PriceActionPattern.timeframe == timeframe_enum,
+                           Candle.timeframe_str == candle_tf_enum.value,
+                           PriceActionPattern.timeframe_str == timeframe_enum.value,
                            Candle.timestamp < candle1.timestamp).\
                     order_by(Candle.timestamp.desc()).first()
                 
@@ -113,7 +113,7 @@ def identify_fair_value_gaps(symbol, timeframe):
                     start_price=candle3.low_price,
                     end_price=candle1.high_price,
                     fill_percentage=0.0,
-                    timeframe=timeframe_enum
+                    timeframe_str=timeframe_enum.value
                 )
                 fvgs.append(fvg)
     

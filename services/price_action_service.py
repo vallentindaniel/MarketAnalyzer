@@ -33,8 +33,8 @@ def identify_price_action_patterns(symbol, timeframe):
     
     candle_tf_enum = candle_timeframe_map.get(timeframe)
     
-    # Get candles for the specified symbol and timeframe
-    candles = Candle.query.filter_by(symbol=symbol, timeframe=candle_tf_enum).order_by(Candle.timestamp).all()
+    # Get candles for the specified symbol and timeframe - using string representation
+    candles = Candle.query.filter_by(symbol=symbol, timeframe_str=candle_tf_enum.value).order_by(Candle.timestamp).all()
     
     if len(candles) < 5:
         logger.warning(f"Not enough candles to identify patterns for {symbol} {timeframe}")
@@ -67,9 +67,9 @@ def identify_price_action_patterns(symbol, timeframe):
                 if current.high_price > prev_high.high_price:
                     pattern = PriceActionPattern(
                         candle_id=current.candle_id,
-                        pattern_type=PatternTypeEnum.HH,
-                        timeframe=timeframe_enum,
-                        validation_status=ValidationStatusEnum.PENDING
+                        pattern_type_str=PatternTypeEnum.HH.value,
+                        timeframe_str=timeframe_enum.value,
+                        validation_status_str=ValidationStatusEnum.PENDING.value
                     )
                     patterns.append(pattern)
                 
@@ -77,9 +77,9 @@ def identify_price_action_patterns(symbol, timeframe):
                 elif current.high_price < prev_high.high_price:
                     pattern = PriceActionPattern(
                         candle_id=current.candle_id,
-                        pattern_type=PatternTypeEnum.LH,
-                        timeframe=timeframe_enum,
-                        validation_status=ValidationStatusEnum.PENDING
+                        pattern_type_str=PatternTypeEnum.LH.value,
+                        timeframe_str=timeframe_enum.value,
+                        validation_status_str=ValidationStatusEnum.PENDING.value
                     )
                     patterns.append(pattern)
         
@@ -104,9 +104,9 @@ def identify_price_action_patterns(symbol, timeframe):
                 if current.low_price < prev_low.low_price:
                     pattern = PriceActionPattern(
                         candle_id=current.candle_id,
-                        pattern_type=PatternTypeEnum.LL,
-                        timeframe=timeframe_enum,
-                        validation_status=ValidationStatusEnum.PENDING
+                        pattern_type_str=PatternTypeEnum.LL.value,
+                        timeframe_str=timeframe_enum.value,
+                        validation_status_str=ValidationStatusEnum.PENDING.value
                     )
                     patterns.append(pattern)
                 
@@ -114,9 +114,9 @@ def identify_price_action_patterns(symbol, timeframe):
                 elif current.low_price > prev_low.low_price:
                     pattern = PriceActionPattern(
                         candle_id=current.candle_id,
-                        pattern_type=PatternTypeEnum.HL,
-                        timeframe=timeframe_enum,
-                        validation_status=ValidationStatusEnum.PENDING
+                        pattern_type_str=PatternTypeEnum.HL.value,
+                        timeframe_str=timeframe_enum.value,
+                        validation_status_str=ValidationStatusEnum.PENDING.value
                     )
                     patterns.append(pattern)
     
@@ -131,9 +131,9 @@ def identify_price_action_patterns(symbol, timeframe):
             
             pattern = PriceActionPattern(
                 candle_id=current.candle_id,
-                pattern_type=PatternTypeEnum.BOS,
-                timeframe=timeframe_enum,
-                validation_status=ValidationStatusEnum.PENDING
+                pattern_type_str=PatternTypeEnum.BOS.value,
+                timeframe_str=timeframe_enum.value,
+                validation_status_str=ValidationStatusEnum.PENDING.value
             )
             patterns.append(pattern)
         
@@ -144,9 +144,9 @@ def identify_price_action_patterns(symbol, timeframe):
             
             pattern = PriceActionPattern(
                 candle_id=current.candle_id,
-                pattern_type=PatternTypeEnum.BOS,
-                timeframe=timeframe_enum,
-                validation_status=ValidationStatusEnum.PENDING
+                pattern_type_str=PatternTypeEnum.BOS.value,
+                timeframe_str=timeframe_enum.value,
+                validation_status_str=ValidationStatusEnum.PENDING.value
             )
             patterns.append(pattern)
     
@@ -154,7 +154,7 @@ def identify_price_action_patterns(symbol, timeframe):
     # First, get all HH, HL, LH, LL patterns
     for i in range(len(patterns)):
         pattern = patterns[i]
-        if pattern.pattern_type in [PatternTypeEnum.HH, PatternTypeEnum.HL, PatternTypeEnum.LH, PatternTypeEnum.LL]:
+        if pattern.pattern_type_str in [PatternTypeEnum.HH.value, PatternTypeEnum.HL.value, PatternTypeEnum.LH.value, PatternTypeEnum.LL.value]:
             candle = Candle.query.get(pattern.candle_id)
             
             # Look for patterns that occur after this one
@@ -167,16 +167,16 @@ def identify_price_action_patterns(symbol, timeframe):
                     continue
                 
                 # Check for CHoCH
-                if ((pattern.pattern_type == PatternTypeEnum.HH and next_pattern.pattern_type == PatternTypeEnum.LH) or
-                    (pattern.pattern_type == PatternTypeEnum.HL and next_pattern.pattern_type == PatternTypeEnum.LL) or
-                    (pattern.pattern_type == PatternTypeEnum.LH and next_pattern.pattern_type == PatternTypeEnum.HH) or
-                    (pattern.pattern_type == PatternTypeEnum.LL and next_pattern.pattern_type == PatternTypeEnum.HL)):
+                if ((pattern.pattern_type_str == PatternTypeEnum.HH.value and next_pattern.pattern_type_str == PatternTypeEnum.LH.value) or
+                    (pattern.pattern_type_str == PatternTypeEnum.HL.value and next_pattern.pattern_type_str == PatternTypeEnum.LL.value) or
+                    (pattern.pattern_type_str == PatternTypeEnum.LH.value and next_pattern.pattern_type_str == PatternTypeEnum.HH.value) or
+                    (pattern.pattern_type_str == PatternTypeEnum.LL.value and next_pattern.pattern_type_str == PatternTypeEnum.HL.value)):
                     
                     choch_pattern = PriceActionPattern(
                         candle_id=next_candle.candle_id,
-                        pattern_type=PatternTypeEnum.CHOCH,
-                        timeframe=timeframe_enum,
-                        validation_status=ValidationStatusEnum.PENDING
+                        pattern_type_str=PatternTypeEnum.CHOCH.value,
+                        timeframe_str=timeframe_enum.value,
+                        validation_status_str=ValidationStatusEnum.PENDING.value
                     )
                     patterns.append(choch_pattern)
     
@@ -211,7 +211,7 @@ def validate_patterns(symbol, pivot_timeframe, timeframes):
         raise ValueError(f"Unsupported pivot timeframe: {pivot_timeframe}")
     
     # Get all patterns for the pivot timeframe
-    pivot_patterns = PriceActionPattern.query.filter_by(timeframe=pivot_tf_enum).all()
+    pivot_patterns = PriceActionPattern.query.filter_by(timeframe_str=pivot_tf_enum.value).all()
     
     for pattern in pivot_patterns:
         pivot_candle = Candle.query.get(pattern.candle_id)
@@ -244,18 +244,22 @@ def validate_patterns(symbol, pivot_timeframe, timeframes):
                     # Check if this candle has a pattern of the same type
                     higher_patterns = PriceActionPattern.query.filter_by(
                         candle_id=higher_tf_candle.candle_id,
-                        pattern_type=pattern.pattern_type
+                        pattern_type_str=pattern.pattern_type_str
                     ).all()
                     
                     if higher_patterns:
                         confirmations += 1
                     else:
                         # Check if it has a contradicting pattern
-                        contradicting_types = get_contradicting_pattern_types(pattern.pattern_type)
-                        contradicting_patterns = PriceActionPattern.query.filter(
-                            PriceActionPattern.candle_id == higher_tf_candle.candle_id,
-                            PriceActionPattern.pattern_type.in_(contradicting_types)
-                        ).all()
+                        contradicting_types = get_contradicting_pattern_types(pattern.pattern_type_str)
+                        # Using individual filter_by queries since SQLite doesn't support in_
+                        contradicting_patterns = []
+                        for c_type in contradicting_types:
+                            patterns = PriceActionPattern.query.filter_by(
+                                candle_id=higher_tf_candle.candle_id,
+                                pattern_type_str=c_type
+                            ).all()
+                            contradicting_patterns.extend(patterns)
                         
                         if contradicting_patterns:
                             contradictions += 1
@@ -268,7 +272,7 @@ def validate_patterns(symbol, pivot_timeframe, timeframes):
                 
                 lower_candles = Candle.query.filter(
                     Candle.symbol == symbol,
-                    Candle.timeframe == candle_tf_enum,
+                    Candle.timeframe_str == candle_tf_enum.value,
                     Candle.timestamp >= pivot_start_time,
                     Candle.timestamp < pivot_end_time
                 ).all()
@@ -281,18 +285,22 @@ def validate_patterns(symbol, pivot_timeframe, timeframes):
                     # Check for confirming patterns
                     confirming_patterns = PriceActionPattern.query.filter_by(
                         candle_id=lower_candle.candle_id,
-                        pattern_type=pattern.pattern_type
+                        pattern_type_str=pattern.pattern_type_str
                     ).all()
                     
                     if confirming_patterns:
                         confirming_count += 1
                     
                     # Check for contradicting patterns
-                    contradicting_types = get_contradicting_pattern_types(pattern.pattern_type)
-                    contradicting_patterns = PriceActionPattern.query.filter(
-                        PriceActionPattern.candle_id == lower_candle.candle_id,
-                        PriceActionPattern.pattern_type.in_(contradicting_types)
-                    ).all()
+                    contradicting_types = get_contradicting_pattern_types(pattern.pattern_type_str)
+                    # Using individual filter_by queries since SQLite doesn't support in_
+                    contradicting_patterns = []
+                    for c_type in contradicting_types:
+                        patterns = PriceActionPattern.query.filter_by(
+                            candle_id=lower_candle.candle_id,
+                            pattern_type_str=c_type
+                        ).all()
+                        contradicting_patterns.extend(patterns)
                     
                     if contradicting_patterns:
                         contradicting_count += 1
@@ -305,9 +313,9 @@ def validate_patterns(symbol, pivot_timeframe, timeframes):
         
         # Update pattern validation status based on confirmations and contradictions
         if confirmations > contradictions:
-            pattern.validation_status = ValidationStatusEnum.VALID
+            pattern.validation_status_str = ValidationStatusEnum.VALID.value
         else:
-            pattern.validation_status = ValidationStatusEnum.INVALID
+            pattern.validation_status_str = ValidationStatusEnum.INVALID.value
     
     db.session.commit()
     
@@ -318,7 +326,7 @@ def find_containing_candle(candle, higher_timeframe_enum):
     Find the higher timeframe candle that contains the given candle
     """
     # Get timeframe values
-    candle_tf = candle.timeframe.value
+    candle_tf = candle.timeframe_str
     higher_tf = higher_timeframe_enum.value
     
     lower_tf_minutes = get_timeframe_minutes(candle_tf)
@@ -334,7 +342,7 @@ def find_containing_candle(candle, higher_timeframe_enum):
     # Find the higher timeframe candle
     higher_tf_candle = Candle.query.filter_by(
         symbol=candle.symbol,
-        timeframe=higher_timeframe_enum,
+        timeframe_str=higher_timeframe_enum.value,
         timestamp=higher_tf_start
     ).first()
     
@@ -361,17 +369,18 @@ def get_timeframe_minutes(timeframe):
     timeframe_minutes = {'1m': 1, '5m': 5, '15m': 15, '30m': 30, '1H': 60, '4H': 240}
     return timeframe_minutes[timeframe]
 
-def get_contradicting_pattern_types(pattern_type):
+def get_contradicting_pattern_types(pattern_type_str):
     """
-    Get pattern types that contradict the given pattern type
+    Get pattern types that contradict the given pattern type string
     """
+    # Map enum values to their contradicting pattern type strings
     contradictions = {
-        PatternTypeEnum.HH: [PatternTypeEnum.LL, PatternTypeEnum.LH],
-        PatternTypeEnum.HL: [PatternTypeEnum.LH, PatternTypeEnum.LL],
-        PatternTypeEnum.LH: [PatternTypeEnum.HH, PatternTypeEnum.HL],
-        PatternTypeEnum.LL: [PatternTypeEnum.HH, PatternTypeEnum.HL],
-        PatternTypeEnum.BOS: [],  # BOS doesn't have a direct contradiction
-        PatternTypeEnum.CHOCH: []  # CHoCH doesn't have a direct contradiction
+        PatternTypeEnum.HH.value: [PatternTypeEnum.LL.value, PatternTypeEnum.LH.value],
+        PatternTypeEnum.HL.value: [PatternTypeEnum.LH.value, PatternTypeEnum.LL.value],
+        PatternTypeEnum.LH.value: [PatternTypeEnum.HH.value, PatternTypeEnum.HL.value],
+        PatternTypeEnum.LL.value: [PatternTypeEnum.HH.value, PatternTypeEnum.HL.value],
+        PatternTypeEnum.BOS.value: [],  # BOS doesn't have a direct contradiction
+        PatternTypeEnum.CHOCH.value: []  # CHoCH doesn't have a direct contradiction
     }
     
-    return contradictions.get(pattern_type, [])
+    return contradictions.get(pattern_type_str, [])
