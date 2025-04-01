@@ -129,6 +129,70 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
     
+    // Handle link timeframes button
+    document.getElementById('link-timeframes-btn').addEventListener('click', function() {
+        const symbol = document.getElementById('currency-select').value;
+        
+        // Show loading state
+        const timeframesStatus = document.getElementById('timeframes-status');
+        timeframesStatus.textContent = 'Linking timeframes...';
+        this.disabled = true;
+        
+        fetch('/api/link-timeframes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ symbol })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('danger', `Error: ${data.error}`);
+                timeframesStatus.textContent = 'Failed to link timeframes';
+            } else {
+                // Create a table to display linking results
+                let timeframeInfo = '<div class="mt-3"><h6>Timeframe Linking Results</h6>';
+                
+                if (!data.linkedCounts || Object.keys(data.linkedCounts).length === 0) {
+                    timeframeInfo += '<p>No timeframes were linked. Please upload data first.</p>';
+                } else {
+                    timeframeInfo += '<div class="table-responsive"><table class="table table-sm table-hover"><thead><tr>' +
+                        '<th>Timeframe</th><th>Linked</th><th>Total</th><th>Percentage</th></tr></thead><tbody>';
+                        
+                    Object.keys(data.linkedCounts).forEach(tf => {
+                        const info = data.linkedCounts[tf];
+                        timeframeInfo += `<tr>
+                            <td>${tf}</td>
+                            <td>${info.linked}</td>
+                            <td>${info.total}</td>
+                            <td>${info.percentage}%</td>
+                        </tr>`;
+                    });
+                    
+                    timeframeInfo += '</tbody></table></div>';
+                }
+                
+                timeframeInfo += '</div>';
+                timeframesStatus.innerHTML = timeframeInfo;
+                
+                // Show successful linking message
+                showAlert('success', 'Timeframes linked successfully');
+                
+                // Refresh chart to show linked data
+                const timeframe = document.getElementById('timeframe-select').value;
+                chart.loadCandleData(symbol, timeframe);
+            }
+            this.disabled = false;
+        })
+        .catch(error => {
+            console.error('Timeframe linking error:', error);
+            showAlert('danger', 'Failed to link timeframes. See console for details.');
+            timeframesStatus.textContent = 'Error linking timeframes';
+            this.disabled = false;
+        });
+    });
+    
     // Handle Price Action Analysis
     document.getElementById('analyze-price-action-btn').addEventListener('click', function() {
         const symbol = document.getElementById('currency-select').value;

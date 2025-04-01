@@ -7,7 +7,7 @@ import logging
 
 from app import db
 from models import Candle, PriceActionPattern, FairValueGap, TradeOpportunity
-from services.candle_service import process_csv_data, generate_higher_timeframe_candles
+from services.candle_service import process_csv_data, generate_higher_timeframe_candles, link_unlinked_timeframes
 from services.price_action_service import identify_price_action_patterns, validate_patterns
 from services.fvg_service import identify_fair_value_gaps
 from services.trade_service import identify_trade_opportunities, get_trade_statistics
@@ -334,4 +334,45 @@ def register_routes(app):
         
         except Exception as e:
             logger.error(f"Error retrieving trade opportunities: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+            
+    @app.route('/api/link-timeframes', methods=['POST'])
+    def link_timeframes():
+        try:
+            data = request.json
+            symbol = data.get('symbol', 'EUR/USD')
+            
+            # Run the linking function
+            success = link_unlinked_timeframes(symbol)
+            
+            # Count linked candles for each timeframe
+            timeframes = ['5m', '15m', '30m', '1H', '4H']
+            linked_counts = {}
+            for tf in timeframes:
+                linked_count = Candle.query.filter(
+                    Candle.symbol == symbol,
+                    Candle.timeframe_str == tf,
+                    Candle.parent_candle_id.isnot(None)
+                ).count()
+                
+                total_count = Candle.query.filter_by(
+                    symbol=symbol,
+                    timeframe_str=tf
+                ).count()
+                
+                linked_counts[tf] = {
+                    'linked': linked_count,
+                    'total': total_count,
+                    'percentage': round(linked_count / total_count * 100 if total_count > 0 else 0, 2)
+                }
+            
+            return jsonify({
+                'success': success,
+                'message': 'Timeframes linked successfully',
+                'linkedCounts': linked_counts
+            })
+        
+        except Exception as e:
+            logger.error(f"Error linking timeframes: {str(e)}")
+            db.session.rollback()
             return jsonify({'error': str(e)}), 500
