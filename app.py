@@ -1,8 +1,13 @@
 import os
+from dotenv import load_dotenv
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
+
+
+# Load environment variables
+load_dotenv()
 
 
 class Base(DeclarativeBase):
@@ -14,15 +19,23 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "market_analyzer_secret_key")
 
-# configure the database to use SQLite
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///forex_analyzer.db"
+# Configure database
+# Use PostgreSQL database from environment
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+
+# Common configuration
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-# initialize the app with the extension, flask-sqlalchemy >= 3.0.x
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+}
+
+# Initialize the app with the extension
 db.init_app(app)
 
 with app.app_context():
     # Register routes
-    from routes import register_routes
+    from app_routes import register_routes
     register_routes(app)
     
     # Make sure to import the models here or their tables won't be created

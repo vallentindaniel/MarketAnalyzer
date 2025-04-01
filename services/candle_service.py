@@ -188,7 +188,17 @@ def create_aggregated_candle(candles, symbol, timeframe_enum, start_time):
 
 def link_unlinked_timeframes(symbol):
     """
-    Link candles across timeframes that haven't been properly linked yet
+    Link candles across timeframes that haven't been properly linked yet.
+    
+    Timeframe hierarchy:
+    - 1m candles → 5m candles
+    - 5m candles → 15m candles
+    - 15m candles → 30m candles
+    - 30m candles → 1H candles
+    - 1H candles → 4H candles
+    
+    The linking is done using the candle_id and parent_candle_id for
+    establishing the parent-child relationships.
     """
     logger.info(f"Linking unlinked timeframes for {symbol}")
     
@@ -207,6 +217,8 @@ def link_unlinked_timeframes(symbol):
         lower_tf = timeframe_hierarchy[i]
         higher_tf = timeframe_hierarchy[i + 1]
         
+        logger.info(f"Processing: {lower_tf} → {higher_tf}")
+        
         # Calculate minutes in each timeframe
         minutes_in_higher_tf = {
             '5m': 5,
@@ -223,8 +235,21 @@ def link_unlinked_timeframes(symbol):
             Candle.parent_candle_id.is_(None)
         ).order_by(Candle.timestamp).all()
         
+        if not unlinked_candles:
+            logger.info(f"No unlinked {lower_tf} candles found")
+            continue
+            
+        logger.info(f"Found {len(unlinked_candles)} unlinked {lower_tf} candles")
         linked_count = 0
         
+        # Get all higher timeframe candles for efficient lookup
+        higher_tf_candles = {}
+        for candle in Candle.query.filter_by(symbol=symbol, timeframe_str=higher_tf).all():
+            higher_tf_candles[candle.timestamp] = candle
+            
+        logger.info(f"Found {len(higher_tf_candles)} {higher_tf} candles")
+        
+        # Process each unlinked candle
         for candle in unlinked_candles:
             # Calculate which higher timeframe candle this should belong to
             candle_time = candle.timestamp
@@ -233,21 +258,29 @@ def link_unlinked_timeframes(symbol):
                 minute=(candle_time.minute // minutes_in_higher_tf) * minutes_in_higher_tf
             )
             
-            # Find the higher timeframe candle
-            higher_tf_candle = Candle.query.filter_by(
-                symbol=symbol,
-                timeframe_str=higher_tf,
-                timestamp=higher_tf_start
-            ).first()
+            # Find the matching higher timeframe candle
+            higher_tf_candle = higher_tf_candles.get(higher_tf_start)
             
             if higher_tf_candle:
-                # Link this candle to its parent
+                # Link this candle to its parent using the candle_id
                 candle.parent_candle_id = higher_tf_candle.candle_id
                 linked_count += 1
+                
+                # Commit periodically to avoid large transactions
+                if linked_count % 1000 == 0:
+                    db.session.commit()
+                    logger.info(f"Progress: Linked {linked_count} {lower_tf} candles so far")
+            else:
+                logger.debug(f"No matching {higher_tf} candle found for {lower_tf} candle at {candle_time}")
         
         if linked_count > 0:
-            logger.info(f"Linked {linked_count} {lower_tf} candles to {higher_tf} candles")
+            db.session.commit()
+            logger.info(f"Successfully linked {linked_count} {lower_tf} candles to {higher_tf} candles")
+        else:
+            logger.warning(f"No {lower_tf} candles were linked to {higher_tf} candles")
     
+    # Final commit to ensure all changes are saved
     db.session.commit()
+    logger.info("Timeframe linking process completed")
     
     return True
