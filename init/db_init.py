@@ -1,7 +1,8 @@
 """
 Database initialization module
 
-This module initializes the MySQL database connection and creates tables.
+This module initializes the database connection and creates tables.
+It supports both PostgreSQL and MySQL databases.
 """
 import os
 import sys
@@ -20,28 +21,28 @@ load_dotenv()
 def get_database_url():
     """
     Get the database URL from environment variables
+    
+    Supports PostgreSQL (default) and MySQL configurations
     """
-    # For local development with MySQL
-    is_local_dev = os.environ.get("LOCAL_DEV", "false").lower() == "true"
-
-    if is_local_dev:
-        # MySQL configuration
+    db_type = os.environ.get("DB_TYPE", "postgresql")
+    
+    if db_type.lower() == "postgresql":
+        # Use PostgreSQL
+        return os.environ.get("DATABASE_URL")
+    elif db_type.lower() == "mysql":
+        # Use MySQL
         host = os.environ.get("MYSQL_HOST", "localhost")
         port = os.environ.get("MYSQL_PORT", "3306")
-        user = os.environ.get("MYSQL_USER", "user1")
-        password = os.environ.get("MYSQL_PASSWORD", "user1")
-        database = os.environ.get("MYSQL_DATABASE", "market_analyzer")
+        user = os.environ.get("MYSQL_USER")
+        password = os.environ.get("MYSQL_PASSWORD")
+        database = os.environ.get("MYSQL_DATABASE")
         
-        # Build the MySQL connection URL
+        if not all([user, password, database]):
+            raise ValueError("MYSQL_USER, MYSQL_PASSWORD, and MYSQL_DATABASE environment variables are required")
+        
         return f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
     else:
-        # For Replit environment, try PostgreSQL first, then fall back to SQLite
-        if os.environ.get('DATABASE_URL'):
-            # Use PostgreSQL if provided by Replit
-            return os.environ.get('DATABASE_URL')
-        else:
-            # Fall back to SQLite if PostgreSQL is not available
-            return "sqlite:///instance/forex_analyzer.db"
+        raise ValueError(f"Unsupported DB_TYPE: {db_type}. Must be 'postgresql' or 'mysql'")
 
 def init_database():
     """Initialize database connection and create tables"""

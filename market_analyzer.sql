@@ -1,5 +1,5 @@
 -- market_analyzer.sql
--- SQL schema for the Market Analyzer application - MySQL Version
+-- SQL schema for the Market Analyzer application
 
 -- Drop tables if they exist (in reverse order of dependencies)
 DROP TABLE IF EXISTS trade_opportunities;
@@ -9,56 +9,49 @@ DROP TABLE IF EXISTS candles;
 
 -- Create Candles table
 CREATE TABLE candles (
-    candle_id INT AUTO_INCREMENT PRIMARY KEY,
+    candle_id SERIAL PRIMARY KEY,
     symbol VARCHAR(10) NOT NULL,
     timeframe_str VARCHAR(10) NOT NULL,
     open_price FLOAT NOT NULL,
     close_price FLOAT NOT NULL,
     high_price FLOAT NOT NULL,
     low_price FLOAT NOT NULL,
-    volume INT NOT NULL,
-    timestamp DATETIME NOT NULL,
-    parent_candle_id INT,
-    FOREIGN KEY (parent_candle_id) REFERENCES candles(candle_id) ON DELETE CASCADE
+    volume INTEGER NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+    parent_candle_id INTEGER REFERENCES candles(candle_id) ON DELETE CASCADE
 );
 
 -- Create Price Action Patterns table
 CREATE TABLE price_action_patterns (
-    pattern_id INT AUTO_INCREMENT PRIMARY KEY,
-    candle_id INT NOT NULL,
+    pattern_id SERIAL PRIMARY KEY,
+    candle_id INTEGER NOT NULL REFERENCES candles(candle_id) ON DELETE CASCADE,
     pattern_type_str VARCHAR(10) NOT NULL,
     timeframe_str VARCHAR(10) NOT NULL,
-    validation_status_str VARCHAR(10) NOT NULL DEFAULT 'Pending',
-    FOREIGN KEY (candle_id) REFERENCES candles(candle_id) ON DELETE CASCADE
+    validation_status_str VARCHAR(10) NOT NULL DEFAULT 'Pending'
 );
 
 -- Create Fair Value Gaps table
 CREATE TABLE fair_value_gaps (
-    fvg_id INT AUTO_INCREMENT PRIMARY KEY,
-    pattern_id INT NOT NULL,
-    candle_start_id INT NOT NULL,
-    candle_end_id INT NOT NULL,
+    fvg_id SERIAL PRIMARY KEY,
+    pattern_id INTEGER NOT NULL REFERENCES price_action_patterns(pattern_id) ON DELETE CASCADE,
+    candle_start_id INTEGER NOT NULL REFERENCES candles(candle_id) ON DELETE CASCADE,
+    candle_end_id INTEGER NOT NULL REFERENCES candles(candle_id) ON DELETE CASCADE,
     start_price FLOAT NOT NULL,
     end_price FLOAT NOT NULL,
     fill_percentage FLOAT NOT NULL DEFAULT 0.0,
-    timeframe_str VARCHAR(10) NOT NULL,
-    FOREIGN KEY (pattern_id) REFERENCES price_action_patterns(pattern_id) ON DELETE CASCADE,
-    FOREIGN KEY (candle_start_id) REFERENCES candles(candle_id) ON DELETE CASCADE,
-    FOREIGN KEY (candle_end_id) REFERENCES candles(candle_id) ON DELETE CASCADE
+    timeframe_str VARCHAR(10) NOT NULL
 );
 
 -- Create Trade Opportunities table
 CREATE TABLE trade_opportunities (
-    opportunity_id INT AUTO_INCREMENT PRIMARY KEY,
-    choch_pattern_id INT NOT NULL,
-    fvg_id INT NOT NULL,
+    opportunity_id SERIAL PRIMARY KEY,
+    choch_pattern_id INTEGER NOT NULL REFERENCES price_action_patterns(pattern_id) ON DELETE CASCADE,
+    fvg_id INTEGER NOT NULL REFERENCES fair_value_gaps(fvg_id) ON DELETE CASCADE,
     entry_price FLOAT NOT NULL,
     stop_loss FLOAT NOT NULL,
     take_profit FLOAT NOT NULL,
     status_str VARCHAR(10) NOT NULL DEFAULT 'Pending',
-    creation_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (choch_pattern_id) REFERENCES price_action_patterns(pattern_id) ON DELETE CASCADE,
-    FOREIGN KEY (fvg_id) REFERENCES fair_value_gaps(fvg_id) ON DELETE CASCADE
+    creation_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes for better query performance
