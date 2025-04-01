@@ -80,7 +80,7 @@ def register_routes(app):
             timeframe = request.args.get('timeframe', '1m')
             
             # Get candles for the specified symbol and timeframe
-            candles = Candle.query.filter_by(symbol=symbol, timeframe=timeframe).order_by(Candle.timestamp).all()
+            candles = Candle.query.filter_by(symbol=symbol, timeframe_str=timeframe).order_by(Candle.timestamp).all()
             
             candle_data = [{
                 'id': c.candle_id,
@@ -122,20 +122,20 @@ def register_routes(app):
             
             # Prepare the response
             validation_stats = {
-                'valid': PriceActionPattern.query.filter_by(validation_status='Valid').count(),
-                'invalid': PriceActionPattern.query.filter_by(validation_status='Invalid').count(),
-                'pending': PriceActionPattern.query.filter_by(validation_status='Pending').count()
+                'valid': PriceActionPattern.query.filter_by(validation_status_str='Valid').count(),
+                'invalid': PriceActionPattern.query.filter_by(validation_status_str='Invalid').count(),
+                'pending': PriceActionPattern.query.filter_by(validation_status_str='Pending').count()
             }
             
             pattern_counts = {}
             for tf in timeframes:
                 pattern_counts[tf] = {
-                    'HH': PriceActionPattern.query.filter_by(timeframe=tf, pattern_type='HH').count(),
-                    'HL': PriceActionPattern.query.filter_by(timeframe=tf, pattern_type='HL').count(),
-                    'LH': PriceActionPattern.query.filter_by(timeframe=tf, pattern_type='LH').count(),
-                    'LL': PriceActionPattern.query.filter_by(timeframe=tf, pattern_type='LL').count(),
-                    'BOS': PriceActionPattern.query.filter_by(timeframe=tf, pattern_type='BOS').count(),
-                    'CHoCH': PriceActionPattern.query.filter_by(timeframe=tf, pattern_type='CHoCH').count()
+                    'HH': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='HH').count(),
+                    'HL': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='HL').count(),
+                    'LH': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='LH').count(),
+                    'LL': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='LL').count(),
+                    'BOS': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='BOS').count(),
+                    'CHoCH': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='CHoCH').count()
                 }
             
             return jsonify({
@@ -219,7 +219,7 @@ def register_routes(app):
             symbol = request.args.get('symbol', 'EUR/USD')
             
             patterns = PriceActionPattern.query.join(Candle, PriceActionPattern.candle_id == Candle.candle_id)\
-                .filter(PriceActionPattern.timeframe == timeframe, Candle.symbol == symbol)\
+                .filter(PriceActionPattern.timeframe_str == timeframe, Candle.symbol == symbol)\
                 .order_by(Candle.timestamp).all()
             
             pattern_data = []
@@ -227,9 +227,9 @@ def register_routes(app):
                 candle = Candle.query.get(p.candle_id)
                 pattern_data.append({
                     'id': p.pattern_id,
-                    'type': p.pattern_type,
-                    'timeframe': p.timeframe,
-                    'status': p.validation_status,
+                    'type': p.pattern_type_str,
+                    'timeframe': p.timeframe_str,
+                    'status': p.validation_status_str,
                     'timestamp': candle.timestamp.timestamp(),
                     'price': candle.close_price
                 })
@@ -246,7 +246,7 @@ def register_routes(app):
             timeframe = request.args.get('timeframe', '15m')
             symbol = request.args.get('symbol', 'EUR/USD')
             
-            fvgs = FairValueGap.query.filter_by(timeframe=timeframe)\
+            fvgs = FairValueGap.query.filter_by(timeframe_str=timeframe)\
                 .join(Candle, FairValueGap.candle_start_id == Candle.candle_id)\
                 .filter(Candle.symbol == symbol)\
                 .order_by(Candle.timestamp).all()
@@ -258,7 +258,7 @@ def register_routes(app):
                 
                 fvg_data.append({
                     'id': fvg.fvg_id,
-                    'timeframe': fvg.timeframe,
+                    'timeframe': fvg.timeframe_str,
                     'startTime': start_candle.timestamp.timestamp(),
                     'endTime': end_candle.timestamp.timestamp(),
                     'startPrice': fvg.start_price,
@@ -284,14 +284,14 @@ def register_routes(app):
                 
                 opportunity_data.append({
                     'id': opp.opportunity_id,
-                    'status': opp.status,
+                    'status': opp.status_str,
                     'entryPrice': opp.entry_price,
                     'stopLoss': opp.stop_loss,
                     'takeProfit': opp.take_profit,
                     'creationTime': opp.creation_time.timestamp(),
-                    'patternType': pattern.pattern_type,
-                    'patternTimeframe': pattern.timeframe,
-                    'fvgTimeframe': fvg.timeframe
+                    'patternType': pattern.pattern_type_str,
+                    'patternTimeframe': pattern.timeframe_str,
+                    'fvgTimeframe': fvg.timeframe_str
                 })
             
             return jsonify(opportunity_data)

@@ -1,9 +1,9 @@
 from datetime import datetime
 import enum
-from sqlalchemy import Enum
+from sqlalchemy import String, DateTime, Float, Integer, ForeignKey
 from app import db
 
-# Define Enum types with names for PostgreSQL
+# Define Enum types
 class TimeframeEnum(enum.Enum):
     M1 = '1m'
     M5 = '5m'
@@ -43,13 +43,24 @@ class Candle(db.Model):
     
     candle_id = db.Column(db.Integer, primary_key=True)
     symbol = db.Column(db.String(10), nullable=False)
-    timeframe = db.Column(Enum(TimeframeEnum), nullable=False)
+    timeframe_str = db.Column(db.String(10), nullable=False)
     open_price = db.Column(db.Float, nullable=False)
     close_price = db.Column(db.Float, nullable=False)
     high_price = db.Column(db.Float, nullable=False)
     low_price = db.Column(db.Float, nullable=False)
     volume = db.Column(db.Integer, nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False)
+    
+    @property
+    def timeframe(self):
+        return TimeframeEnum(self.timeframe_str)
+    
+    @timeframe.setter
+    def timeframe(self, enum_value):
+        if isinstance(enum_value, TimeframeEnum):
+            self.timeframe_str = enum_value.value
+        else:
+            self.timeframe_str = enum_value
     
     # Self-referential relationship for linking to parent candle
     parent_candle_id = db.Column(db.Integer, db.ForeignKey('candles.candle_id', ondelete='CASCADE'), nullable=True)
@@ -77,9 +88,42 @@ class PriceActionPattern(db.Model):
     
     pattern_id = db.Column(db.Integer, primary_key=True)
     candle_id = db.Column(db.Integer, db.ForeignKey('candles.candle_id', ondelete='CASCADE'), nullable=False)
-    pattern_type = db.Column(Enum(PatternTypeEnum), nullable=False)
-    timeframe = db.Column(Enum(AnalysisTimeframeEnum), nullable=False)
-    validation_status = db.Column(Enum(ValidationStatusEnum), default=ValidationStatusEnum.PENDING, nullable=False)
+    pattern_type_str = db.Column(db.String(10), nullable=False)
+    timeframe_str = db.Column(db.String(10), nullable=False)
+    validation_status_str = db.Column(db.String(10), default=ValidationStatusEnum.PENDING.value, nullable=False)
+    
+    @property
+    def pattern_type(self):
+        return PatternTypeEnum(self.pattern_type_str)
+    
+    @pattern_type.setter
+    def pattern_type(self, enum_value):
+        if isinstance(enum_value, PatternTypeEnum):
+            self.pattern_type_str = enum_value.value
+        else:
+            self.pattern_type_str = enum_value
+    
+    @property
+    def timeframe(self):
+        return AnalysisTimeframeEnum(self.timeframe_str)
+    
+    @timeframe.setter
+    def timeframe(self, enum_value):
+        if isinstance(enum_value, AnalysisTimeframeEnum):
+            self.timeframe_str = enum_value.value
+        else:
+            self.timeframe_str = enum_value
+    
+    @property
+    def validation_status(self):
+        return ValidationStatusEnum(self.validation_status_str)
+    
+    @validation_status.setter
+    def validation_status(self, enum_value):
+        if isinstance(enum_value, ValidationStatusEnum):
+            self.validation_status_str = enum_value.value
+        else:
+            self.validation_status_str = enum_value
     
     # Relationship with FairValueGap
     fvgs = db.relationship('FairValueGap', backref='pattern', cascade="all, delete-orphan")
@@ -103,7 +147,18 @@ class FairValueGap(db.Model):
     start_price = db.Column(db.Float, nullable=False)
     end_price = db.Column(db.Float, nullable=False)
     fill_percentage = db.Column(db.Float, default=0.0, nullable=False)
-    timeframe = db.Column(Enum(AnalysisTimeframeEnum), nullable=False)
+    timeframe_str = db.Column(db.String(10), nullable=False)
+    
+    @property
+    def timeframe(self):
+        return AnalysisTimeframeEnum(self.timeframe_str)
+    
+    @timeframe.setter
+    def timeframe(self, enum_value):
+        if isinstance(enum_value, AnalysisTimeframeEnum):
+            self.timeframe_str = enum_value.value
+        else:
+            self.timeframe_str = enum_value
     
     # Relationship with TradeOpportunity
     trade_opportunities = db.relationship('TradeOpportunity', 
@@ -123,8 +178,19 @@ class TradeOpportunity(db.Model):
     entry_price = db.Column(db.Float, nullable=False)
     stop_loss = db.Column(db.Float, nullable=False)
     take_profit = db.Column(db.Float, nullable=False)
-    status = db.Column(Enum(TradeStatusEnum), default=TradeStatusEnum.PENDING, nullable=False)
+    status_str = db.Column(db.String(10), default=TradeStatusEnum.PENDING.value, nullable=False)
     creation_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    @property
+    def status(self):
+        return TradeStatusEnum(self.status_str)
+    
+    @status.setter
+    def status(self, enum_value):
+        if isinstance(enum_value, TradeStatusEnum):
+            self.status_str = enum_value.value
+        else:
+            self.status_str = enum_value
     
     def __repr__(self):
         return f"<TradeOpportunity ID:{self.opportunity_id} Status:{self.status.value}>"

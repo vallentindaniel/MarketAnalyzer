@@ -14,12 +14,9 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "market_analyzer_secret_key")
 
-# configure the database, relative to the app instance folder
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
+# configure the database to use SQLite
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///forex_analyzer.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # initialize the app with the extension, flask-sqlalchemy >= 3.0.x
 db.init_app(app)
 
