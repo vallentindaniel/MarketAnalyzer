@@ -34,7 +34,7 @@ def process_csv_data(df, symbol):
     for _, row in df.iterrows():
         candle = Candle(
             symbol=symbol,
-            timeframe=TimeframeEnum.M1,
+            timeframe_str=TimeframeEnum.M1.value,
             open_price=float(row['open']),
             high_price=float(row['high']),
             low_price=float(row['low']),
@@ -61,7 +61,7 @@ def generate_higher_timeframe_candles(candles, timeframe):
     symbol = candles[0].symbol if candles else None
     
     # Get all 1-minute candles from database
-    one_min_candles = Candle.query.filter_by(symbol=symbol, timeframe=TimeframeEnum.M1).order_by(Candle.timestamp).all()
+    one_min_candles = Candle.query.filter_by(symbol=symbol, timeframe_str=TimeframeEnum.M1.value).order_by(Candle.timestamp).all()
     
     # Map string timeframe to Enum
     timeframe_enum_map = {
@@ -137,7 +137,7 @@ def generate_higher_timeframe_candles(candles, timeframe):
         
         child_candles = Candle.query.filter(
             Candle.symbol == symbol,
-            Candle.timeframe == TimeframeEnum.M1,
+            Candle.timeframe_str == TimeframeEnum.M1.value,
             Candle.timestamp >= start_time,
             Candle.timestamp < end_time
         ).all()
@@ -177,7 +177,7 @@ def create_aggregated_candle(candles, symbol, timeframe_enum, start_time):
     
     return Candle(
         symbol=symbol,
-        timeframe=timeframe_enum,
+        timeframe_str=timeframe_enum.value,
         open_price=open_price,
         close_price=close_price,
         high_price=high_price,
