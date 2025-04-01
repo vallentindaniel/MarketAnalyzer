@@ -89,7 +89,9 @@ def register_routes(app):
             timeframe = request.args.get('timeframe', '1m')
             
             # Get candles for the specified symbol and timeframe
-            candles = Candle.query.filter_by(symbol=symbol, timeframe_str=timeframe).order_by(Candle.timestamp).all()
+            from models import TimeframeEnum
+            timeframe_enum = TimeframeEnum(timeframe)
+            candles = Candle.query.filter_by(symbol=symbol, timeframe=timeframe_enum).order_by(Candle.timestamp).all()
             
             candle_data = [{
                 'id': c.candle_id,
@@ -113,7 +115,7 @@ def register_routes(app):
             symbol = request.args.get('symbol', 'EUR/USD')
             
             # Get all available timeframes for the symbol
-            timeframes = db.session.query(Candle.timeframe_str)\
+            timeframes = db.session.query(Candle.timeframe)\
                 .filter_by(symbol=symbol)\
                 .distinct()\
                 .all()
@@ -121,13 +123,15 @@ def register_routes(app):
             # Count candles in each timeframe
             result = []
             for tf in timeframes:
-                timeframe = tf[0]  # Extract the string from the tuple
-                count = Candle.query.filter_by(symbol=symbol, timeframe_str=timeframe).count()
+                timeframe_enum = tf[0]  # Extract the enum from the tuple
+                timeframe = timeframe_enum.value  # Get the string value from the enum
+                
+                count = Candle.query.filter_by(symbol=symbol, timeframe=timeframe_enum).count()
                 
                 # Get parent-child relationships
                 linked_count = Candle.query.filter(
                     Candle.symbol == symbol,
-                    Candle.timeframe_str == timeframe,
+                    Candle.timeframe == timeframe_enum,
                     Candle.parent_candle_id.isnot(None)
                 ).count()
                 
@@ -166,21 +170,24 @@ def register_routes(app):
             validated_patterns = validate_patterns(symbol, pivot_tf, timeframes)
             
             # Prepare the response
+            from models import ValidationStatusEnum, AnalysisTimeframeEnum, PatternTypeEnum
+            
             validation_stats = {
-                'valid': PriceActionPattern.query.filter_by(validation_status_str='Valid').count(),
-                'invalid': PriceActionPattern.query.filter_by(validation_status_str='Invalid').count(),
-                'pending': PriceActionPattern.query.filter_by(validation_status_str='Pending').count()
+                'valid': PriceActionPattern.query.filter_by(validation_status=ValidationStatusEnum.VALID).count(),
+                'invalid': PriceActionPattern.query.filter_by(validation_status=ValidationStatusEnum.INVALID).count(),
+                'pending': PriceActionPattern.query.filter_by(validation_status=ValidationStatusEnum.PENDING).count()
             }
             
             pattern_counts = {}
             for tf in timeframes:
+                tf_enum = AnalysisTimeframeEnum(tf)
                 pattern_counts[tf] = {
-                    'HH': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='HH').count(),
-                    'HL': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='HL').count(),
-                    'LH': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='LH').count(),
-                    'LL': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='LL').count(),
-                    'BOS': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='BOS').count(),
-                    'CHoCH': PriceActionPattern.query.filter_by(timeframe_str=tf, pattern_type_str='CHoCH').count()
+                    'HH': PriceActionPattern.query.filter_by(timeframe=tf_enum, pattern_type=PatternTypeEnum.HH).count(),
+                    'HL': PriceActionPattern.query.filter_by(timeframe=tf_enum, pattern_type=PatternTypeEnum.HL).count(),
+                    'LH': PriceActionPattern.query.filter_by(timeframe=tf_enum, pattern_type=PatternTypeEnum.LH).count(),
+                    'LL': PriceActionPattern.query.filter_by(timeframe=tf_enum, pattern_type=PatternTypeEnum.LL).count(),
+                    'BOS': PriceActionPattern.query.filter_by(timeframe=tf_enum, pattern_type=PatternTypeEnum.BOS).count(),
+                    'CHoCH': PriceActionPattern.query.filter_by(timeframe=tf_enum, pattern_type=PatternTypeEnum.CHOCH).count()
                 }
             
             return jsonify({
@@ -263,8 +270,11 @@ def register_routes(app):
             timeframe = request.args.get('timeframe', '15m')
             symbol = request.args.get('symbol', 'EUR/USD')
             
+            from models import AnalysisTimeframeEnum
+            tf_enum = AnalysisTimeframeEnum(timeframe)
+            
             patterns = PriceActionPattern.query.join(Candle, PriceActionPattern.candle_id == Candle.candle_id)\
-                .filter(PriceActionPattern.timeframe_str == timeframe, Candle.symbol == symbol)\
+                .filter(PriceActionPattern.timeframe == tf_enum, Candle.symbol == symbol)\
                 .order_by(Candle.timestamp).all()
             
             pattern_data = []
@@ -291,7 +301,10 @@ def register_routes(app):
             timeframe = request.args.get('timeframe', '15m')
             symbol = request.args.get('symbol', 'EUR/USD')
             
-            fvgs = FairValueGap.query.filter_by(timeframe_str=timeframe)\
+            from models import AnalysisTimeframeEnum
+            tf_enum = AnalysisTimeframeEnum(timeframe)
+            
+            fvgs = FairValueGap.query.filter_by(timeframe=tf_enum)\
                 .join(Candle, FairValueGap.candle_start_id == Candle.candle_id)\
                 .filter(Candle.symbol == symbol)\
                 .order_by(Candle.timestamp).all()
@@ -357,16 +370,20 @@ def register_routes(app):
             # Count linked candles for each timeframe
             timeframes = ['5m', '15m', '30m', '1H', '4H']
             linked_counts = {}
+            
+            from models import TimeframeEnum
+            
             for tf in timeframes:
+                tf_enum = TimeframeEnum(tf)
                 linked_count = Candle.query.filter(
                     Candle.symbol == symbol,
-                    Candle.timeframe_str == tf,
+                    Candle.timeframe == tf_enum,
                     Candle.parent_candle_id.isnot(None)
                 ).count()
                 
                 total_count = Candle.query.filter_by(
                     symbol=symbol,
-                    timeframe_str=tf
+                    timeframe=tf_enum
                 ).count()
                 
                 linked_counts[tf] = {

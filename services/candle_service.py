@@ -204,12 +204,12 @@ def link_unlinked_timeframes(symbol):
     
     # Define the hierarchy of timeframes
     timeframe_hierarchy = [
-        TimeframeEnum.M1.value,
-        TimeframeEnum.M5.value,
-        TimeframeEnum.M15.value,
-        TimeframeEnum.M30.value,
-        TimeframeEnum.H1.value,
-        TimeframeEnum.H4.value
+        TimeframeEnum.M1,
+        TimeframeEnum.M5,
+        TimeframeEnum.M15,
+        TimeframeEnum.M30,
+        TimeframeEnum.H1,
+        TimeframeEnum.H4
     ]
     
     # Link each timeframe to the next higher timeframe
@@ -219,22 +219,23 @@ def link_unlinked_timeframes(symbol):
         
         logger.info(f"Processing: {lower_tf} → {higher_tf}")
         
-        # Calculate minutes in each timeframe
+        # Calculate minutes in each timeframe based on timeframe enum
         minutes_in_higher_tf = {
-            '5m': 5,
-            '15m': 15,
-            '30m': 30,
-            '1H': 60,
-            '4H': 240
-        }[higher_tf]
+            TimeframeEnum.M5: 5,
+            TimeframeEnum.M15: 15,
+            TimeframeEnum.M30: 30,
+            TimeframeEnum.H1: 60,
+            TimeframeEnum.H4: 240
+        }.get(higher_tf)
+        
+        if minutes_in_higher_tf is None:
+            raise ValueError(f"Unsupported timeframe for minutes calculation: {higher_tf}")
         
         # Get all candles in the lower timeframe that aren't linked yet
-        # Convert string timeframe to enum
-        lower_tf_enum = TimeframeEnum(lower_tf)
-        
+        # Lower timeframe is already an enum from the hierarchy
         unlinked_candles = Candle.query.filter(
             Candle.symbol == symbol,
-            Candle.timeframe == lower_tf_enum,
+            Candle.timeframe == lower_tf,
             Candle.parent_candle_id.is_(None)
         ).order_by(Candle.timestamp).all()
         

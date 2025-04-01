@@ -43,7 +43,7 @@ class Candle(db.Model):
     
     candle_id = db.Column(db.Integer, primary_key=True)
     symbol = db.Column(db.String(10), nullable=False)
-    timeframe_str = db.Column(db.String(10), nullable=False)
+    timeframe = db.Column(db.Enum(TimeframeEnum), nullable=False)
     open_price = db.Column(db.Float, nullable=False)
     close_price = db.Column(db.Float, nullable=False)
     high_price = db.Column(db.Float, nullable=False)
@@ -52,15 +52,13 @@ class Candle(db.Model):
     timestamp = db.Column(db.DateTime, nullable=False)
     
     @property
-    def timeframe(self):
-        return TimeframeEnum(self.timeframe_str)
+    def timeframe_str(self):
+        return self.timeframe.value if self.timeframe else None
     
-    @timeframe.setter
-    def timeframe(self, enum_value):
-        if isinstance(enum_value, TimeframeEnum):
-            self.timeframe_str = enum_value.value
-        else:
-            self.timeframe_str = enum_value
+    @timeframe_str.setter
+    def timeframe_str(self, value):
+        if value:
+            self.timeframe = TimeframeEnum(value)
     
     # Self-referential relationship for linking to parent candle
     parent_candle_id = db.Column(db.Integer, db.ForeignKey('candles.candle_id', ondelete='CASCADE'), nullable=True)
@@ -88,42 +86,36 @@ class PriceActionPattern(db.Model):
     
     pattern_id = db.Column(db.Integer, primary_key=True)
     candle_id = db.Column(db.Integer, db.ForeignKey('candles.candle_id', ondelete='CASCADE'), nullable=False)
-    pattern_type_str = db.Column(db.String(10), nullable=False)
-    timeframe_str = db.Column(db.String(10), nullable=False)
-    validation_status_str = db.Column(db.String(10), default=ValidationStatusEnum.PENDING.value, nullable=False)
+    pattern_type = db.Column(db.Enum(PatternTypeEnum), nullable=False)
+    timeframe = db.Column(db.Enum(AnalysisTimeframeEnum), nullable=False)
+    validation_status = db.Column(db.Enum(ValidationStatusEnum), default=ValidationStatusEnum.PENDING, nullable=False)
     
     @property
-    def pattern_type(self):
-        return PatternTypeEnum(self.pattern_type_str)
+    def pattern_type_str(self):
+        return self.pattern_type.value if self.pattern_type else None
     
-    @pattern_type.setter
-    def pattern_type(self, enum_value):
-        if isinstance(enum_value, PatternTypeEnum):
-            self.pattern_type_str = enum_value.value
-        else:
-            self.pattern_type_str = enum_value
+    @pattern_type_str.setter
+    def pattern_type_str(self, value):
+        if value:
+            self.pattern_type = PatternTypeEnum(value)
     
     @property
-    def timeframe(self):
-        return AnalysisTimeframeEnum(self.timeframe_str)
+    def timeframe_str(self):
+        return self.timeframe.value if self.timeframe else None
     
-    @timeframe.setter
-    def timeframe(self, enum_value):
-        if isinstance(enum_value, AnalysisTimeframeEnum):
-            self.timeframe_str = enum_value.value
-        else:
-            self.timeframe_str = enum_value
+    @timeframe_str.setter
+    def timeframe_str(self, value):
+        if value:
+            self.timeframe = AnalysisTimeframeEnum(value)
     
     @property
-    def validation_status(self):
-        return ValidationStatusEnum(self.validation_status_str)
+    def validation_status_str(self):
+        return self.validation_status.value if self.validation_status else None
     
-    @validation_status.setter
-    def validation_status(self, enum_value):
-        if isinstance(enum_value, ValidationStatusEnum):
-            self.validation_status_str = enum_value.value
-        else:
-            self.validation_status_str = enum_value
+    @validation_status_str.setter
+    def validation_status_str(self, value):
+        if value:
+            self.validation_status = ValidationStatusEnum(value)
     
     # Relationship with FairValueGap
     fvgs = db.relationship('FairValueGap', backref='pattern', cascade="all, delete-orphan")
@@ -147,18 +139,16 @@ class FairValueGap(db.Model):
     start_price = db.Column(db.Float, nullable=False)
     end_price = db.Column(db.Float, nullable=False)
     fill_percentage = db.Column(db.Float, default=0.0, nullable=False)
-    timeframe_str = db.Column(db.String(10), nullable=False)
+    timeframe = db.Column(db.Enum(AnalysisTimeframeEnum), nullable=False)
     
     @property
-    def timeframe(self):
-        return AnalysisTimeframeEnum(self.timeframe_str)
+    def timeframe_str(self):
+        return self.timeframe.value if self.timeframe else None
     
-    @timeframe.setter
-    def timeframe(self, enum_value):
-        if isinstance(enum_value, AnalysisTimeframeEnum):
-            self.timeframe_str = enum_value.value
-        else:
-            self.timeframe_str = enum_value
+    @timeframe_str.setter
+    def timeframe_str(self, value):
+        if value:
+            self.timeframe = AnalysisTimeframeEnum(value)
     
     # Relationship with TradeOpportunity
     trade_opportunities = db.relationship('TradeOpportunity', 
@@ -178,19 +168,17 @@ class TradeOpportunity(db.Model):
     entry_price = db.Column(db.Float, nullable=False)
     stop_loss = db.Column(db.Float, nullable=False)
     take_profit = db.Column(db.Float, nullable=False)
-    status_str = db.Column(db.String(10), default=TradeStatusEnum.PENDING.value, nullable=False)
+    status = db.Column(db.Enum(TradeStatusEnum), default=TradeStatusEnum.PENDING, nullable=False)
     creation_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     
     @property
-    def status(self):
-        return TradeStatusEnum(self.status_str)
+    def status_str(self):
+        return self.status.value if self.status else None
     
-    @status.setter
-    def status(self, enum_value):
-        if isinstance(enum_value, TradeStatusEnum):
-            self.status_str = enum_value.value
-        else:
-            self.status_str = enum_value
+    @status_str.setter
+    def status_str(self, value):
+        if value:
+            self.status = TradeStatusEnum(value)
     
     def __repr__(self):
         return f"<TradeOpportunity ID:{self.opportunity_id} Status:{self.status.value}>"
