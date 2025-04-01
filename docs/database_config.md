@@ -1,14 +1,13 @@
 # Database Configuration Guide
 
-The Market Analyzer application supports both PostgreSQL and MySQL databases. This guide provides detailed information on how to configure the database connection for both options.
+The Market Analyzer application uses PostgreSQL database. This guide provides detailed information on how to configure the database connection.
 
-## PostgreSQL Configuration (Default)
+## PostgreSQL Configuration
 
-PostgreSQL is the default database system for the Market Analyzer. To configure PostgreSQL, you'll need to set the following environment variables:
+To configure PostgreSQL, you'll need to set the following environment variable:
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `DB_TYPE` | Set to 'postgresql' to use PostgreSQL | postgresql | Yes |
 | `DATABASE_URL` | PostgreSQL connection URL | None | Yes |
 
 ### Connection URL Format
@@ -27,38 +26,14 @@ postgresql://myuser:mypassword@localhost:5432/market_analyzer
 
 If you're using Replit's built-in PostgreSQL database, the `DATABASE_URL` is automatically set as an environment variable.
 
-## MySQL Configuration (Alternative)
-
-To use MySQL instead of PostgreSQL, set the following environment variables:
-
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `DB_TYPE` | Set to 'mysql' to use MySQL | postgresql | Yes |
-| `MYSQL_HOST` | MySQL host address | localhost | No |
-| `MYSQL_PORT` | MySQL port number | 3306 | No |
-| `MYSQL_USER` | MySQL username | None | Yes |
-| `MYSQL_PASSWORD` | MySQL password | None | Yes |
-| `MYSQL_DATABASE` | MySQL database name | None | Yes |
-
-Example MySQL configuration in `.env` file:
-```
-DB_TYPE=mysql
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_USER=myuser
-MYSQL_PASSWORD=mypassword
-MYSQL_DATABASE=market_analyzer
-```
-
 ## Setting Up Environment Variables
 
 1. Create a `.env` file in the root directory of the application
-2. Add the necessary environment variables based on your chosen database system
+2. Add the necessary environment variables
 3. The application will automatically load these variables on startup
 
-Example `.env` file for PostgreSQL:
+Example `.env` file:
 ```
-DB_TYPE=postgresql
 DATABASE_URL=postgresql://myuser:mypassword@localhost:5432/market_analyzer
 SESSION_SECRET=your_secure_session_key
 ```
@@ -102,28 +77,12 @@ This script will:
 
 ## Troubleshooting Database Connection Issues
 
-### PostgreSQL Issues:
-
 1. Ensure PostgreSQL is running on the specified host and port
 2. Verify the username and password are correct
 3. Make sure the database exists
 4. Check that the user has the necessary permissions
 
 Common error: "FATAL: database 'market_analyzer' does not exist"
-Solution: Create the database manually before connecting:
-
-```sql
-CREATE DATABASE market_analyzer;
-```
-
-### MySQL Issues:
-
-1. Ensure MySQL is running on the specified host and port
-2. Verify the username and password are correct
-3. Make sure the database exists
-4. Check that the user has the necessary permissions
-
-Common error: "Unknown database 'market_analyzer'"
 Solution: Create the database manually before connecting:
 
 ```sql

@@ -18,7 +18,7 @@ A web application for forex market analysis that helps traders identify price ac
 ## Key Technologies
 
 - Backend: Python/Flask
-- Database: PostgreSQL (default), MySQL (configurable)
+- Database: PostgreSQL
 - Frontend: JavaScript with LightweightCharts
 - UI: Bootstrap CSS
 
@@ -43,13 +43,7 @@ A web application for forex market analysis that helps traders identify price ac
 
 The application can be configured using environment variables:
 
-- `DB_TYPE`: Database type to use ('postgresql' or 'mysql', default: 'postgresql')
-- `DATABASE_URL`: PostgreSQL connection URL (used when DB_TYPE=postgresql)
-- `MYSQL_HOST`: MySQL host (default: 'localhost')
-- `MYSQL_PORT`: MySQL port (default: 3306)
-- `MYSQL_USER`: MySQL username
-- `MYSQL_PASSWORD`: MySQL password
-- `MYSQL_DATABASE`: MySQL database name
+- `DATABASE_URL`: PostgreSQL connection URL (required)
 - `SESSION_SECRET`: Secret key for Flask sessions
 
 For more detailed database configuration options, see [Database Configuration Guide](docs/database_config.md).

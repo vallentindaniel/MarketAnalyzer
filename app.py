@@ -1,7 +1,7 @@
 """
 Market Analyzer - Application Configuration
 
-This module initializes the Flask application and the database connection.
+This module initializes the Flask application and the PostgreSQL database connection.
 """
 import os
 import logging
@@ -27,12 +27,11 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "market_analyzer_secret_key")
 
-# Configure database with support for both PostgreSQL and MySQL
-# Get database connection URL from the environment variable
+# Configure PostgreSQL database connection
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
-    logger.warning("DATABASE_URL environment variable not set, using fallback")
-    DATABASE_URL = "sqlite:///instance/forex_analyzer.db"
+    logger.error("DATABASE_URL environment variable not set. PostgreSQL connection required.")
+    raise ValueError("DATABASE_URL environment variable must be set for PostgreSQL connection")
 
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 
