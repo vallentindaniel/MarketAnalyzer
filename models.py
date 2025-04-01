@@ -43,24 +43,13 @@ class Candle(db.Model):
     
     candle_id = db.Column(db.Integer, primary_key=True)
     symbol = db.Column(db.String(10), nullable=False)
-    timeframe_str = db.Column(db.String(10), nullable=False)
+    timeframe = db.Column(db.Enum(TimeframeEnum), nullable=False)
     open_price = db.Column(db.Float, nullable=False)
     close_price = db.Column(db.Float, nullable=False)
     high_price = db.Column(db.Float, nullable=False)
     low_price = db.Column(db.Float, nullable=False)
     volume = db.Column(db.Integer, nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False)
-    
-    @property
-    def timeframe(self):
-        return TimeframeEnum(self.timeframe_str)
-    
-    @timeframe.setter
-    def timeframe(self, enum_value):
-        if isinstance(enum_value, TimeframeEnum):
-            self.timeframe_str = enum_value.value
-        else:
-            self.timeframe_str = enum_value
     
     # Self-referential relationship for linking to parent candle
     parent_candle_id = db.Column(db.Integer, db.ForeignKey('candles.candle_id', ondelete='CASCADE'), nullable=True)
@@ -80,7 +69,7 @@ class Candle(db.Model):
                               backref='end_candle', cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"<Candle {self.symbol} {self.timeframe.value} {self.timestamp}>"
+        return f"<Candle {self.symbol} {self.timeframe} {self.timestamp}>"
 
 
 class PriceActionPattern(db.Model):

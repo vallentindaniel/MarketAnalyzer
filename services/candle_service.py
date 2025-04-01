@@ -34,7 +34,7 @@ def process_csv_data(df, symbol):
     for _, row in df.iterrows():
         candle = Candle(
             symbol=symbol,
-            timeframe_str=TimeframeEnum.M1.value,
+            timeframe=TimeframeEnum.M1,
             open_price=float(row['open']),
             high_price=float(row['high']),
             low_price=float(row['low']),
@@ -61,7 +61,7 @@ def generate_higher_timeframe_candles(candles, timeframe):
     symbol = candles[0].symbol if candles else None
     
     # Get all 1-minute candles from database
-    one_min_candles = Candle.query.filter_by(symbol=symbol, timeframe_str=TimeframeEnum.M1.value).order_by(Candle.timestamp).all()
+    one_min_candles = Candle.query.filter_by(symbol=symbol, timeframe=TimeframeEnum.M1).order_by(Candle.timestamp).all()
     
     # Map string timeframe to Enum
     timeframe_enum_map = {
@@ -137,7 +137,7 @@ def generate_higher_timeframe_candles(candles, timeframe):
         
         child_candles = Candle.query.filter(
             Candle.symbol == symbol,
-            Candle.timeframe_str == TimeframeEnum.M1.value,
+            Candle.timeframe == TimeframeEnum.M1,
             Candle.timestamp >= start_time,
             Candle.timestamp < end_time
         ).all()
@@ -177,7 +177,7 @@ def create_aggregated_candle(candles, symbol, timeframe_enum, start_time):
     
     return Candle(
         symbol=symbol,
-        timeframe_str=timeframe_enum.value,
+        timeframe=timeframe_enum,
         open_price=open_price,
         close_price=close_price,
         high_price=high_price,
@@ -229,9 +229,12 @@ def link_unlinked_timeframes(symbol):
         }[higher_tf]
         
         # Get all candles in the lower timeframe that aren't linked yet
+        # Convert string timeframe to enum
+        lower_tf_enum = TimeframeEnum(lower_tf)
+        
         unlinked_candles = Candle.query.filter(
             Candle.symbol == symbol,
-            Candle.timeframe_str == lower_tf,
+            Candle.timeframe == lower_tf_enum,
             Candle.parent_candle_id.is_(None)
         ).order_by(Candle.timestamp).all()
         
@@ -243,8 +246,9 @@ def link_unlinked_timeframes(symbol):
         linked_count = 0
         
         # Get all higher timeframe candles for efficient lookup
+        higher_tf_enum = TimeframeEnum(higher_tf)
         higher_tf_candles = {}
-        for candle in Candle.query.filter_by(symbol=symbol, timeframe_str=higher_tf).all():
+        for candle in Candle.query.filter_by(symbol=symbol, timeframe=higher_tf_enum).all():
             higher_tf_candles[candle.timestamp] = candle
             
         logger.info(f"Found {len(higher_tf_candles)} {higher_tf} candles")
