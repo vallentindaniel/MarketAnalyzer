@@ -1,0 +1,446 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-cog me-2"></i>Configuration
+            </div>
+            <div class="card-body">
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="currency-select" class="form-label">Select Currency Pair</label>
+                        <select class="form-select" id="currency-select" name="currency">
+                            <option value="EUR/USD" selected>EUR/USD</option>
+                            <option value="GBP/USD">GBP/USD</option>
+                            <option value="USD/JPY">USD/JPY</option>
+                            <option value="AUD/USD">AUD/USD</option>
+                            <option value="USD/CAD">USD/CAD</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Upload CSV Data (1-minute Timeframe)</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".csv" required>
+                        <div class="form-text">CSV should contain: timestamp, open, high, low, close, volume</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="upload-btn">
+                        <i class="fas fa-upload me-2"></i>Upload & Process
+                    </button>
+                    <div id="upload-status" class="mt-2"></div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i>Chart Settings
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="timeframe-select" class="form-label">Select Timeframe</label>
+                    <select class="form-select" id="timeframe-select" name="timeframe">
+                        <option value="1m">1 Minute</option>
+                        <option value="5m">5 Minutes</option>
+                        <option value="15m" selected>15 Minutes</option>
+                        <option value="30m">30 Minutes</option>
+                        <option value="1H">1 Hour</option>
+                        <option value="4H">4 Hours</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>Information
+            </div>
+            <div class="card-body">
+                <h5>Market Analyzer Features</h5>
+                <ul>
+                    <li>Upload and visualize forex candle data</li>
+                    <li>Automatically generate higher timeframe candles</li>
+                    <li>Identify price action patterns across timeframes</li>
+                    <li>Detect Fair Value Gaps (FVGs)</li>
+                    <li>Find trade opportunities based on CHoCH and FVG patterns</li>
+                    <li>Track trade statistics with 1:2 risk-reward ratio</li>
+                </ul>
+                
+                <h5>Analysis Workflow</h5>
+                <ol>
+                    <li>Upload your 1-minute timeframe CSV data</li>
+                    <li>Analyze price action patterns (tab #1)</li>
+                    <li>Identify Fair Value Gaps (tab #2)</li>
+                    <li>Find trade opportunities (tab #3)</li>
+                    <li>Review statistics and performance</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart display area -->
+<div id="chart-container" class="mt-4 border rounded"></div>
+
+<!-- Tabs for different analysis functions -->
+<ul class="nav nav-tabs" id="analysisTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="price-action-tab" data-bs-toggle="tab" href="#price-action" role="tab">
+            <i class="fas fa-chart-line me-2"></i>Price Action
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="fvg-tab" data-bs-toggle="tab" href="#fvg" role="tab">
+            <i class="fas fa-expand-arrows-alt me-2"></i>Fair Value Gaps
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="opportunities-tab" data-bs-toggle="tab" href="#opportunities" role="tab">
+            <i class="fas fa-search-dollar me-2"></i>Trade Opportunities
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content" id="analysisTabContent">
+    <!-- Price Action Tab -->
+    <div class="tab-pane fade show active" id="price-action" role="tabpanel">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Price Action Analysis Configuration</div>
+                    <div class="card-body">
+                        <form id="price-action-form">
+                            <div class="mb-3">
+                                <label class="form-label">Select Timeframes to Analyze</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" class="form-check-input" id="pa-tf-5m" name="pa-timeframe" value="5m" checked>
+                                        <label class="form-check-label ms-2" for="pa-tf-5m">5 Minutes</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" class="form-check-input" id="pa-tf-15m" name="pa-timeframe" value="15m" checked>
+                                        <label class="form-check-label ms-2" for="pa-tf-15m">15 Minutes</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" class="form-check-input" id="pa-tf-30m" name="pa-timeframe" value="30m" checked>
+                                        <label class="form-check-label ms-2" for="pa-tf-30m">30 Minutes</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" class="form-check-input" id="pa-tf-1h" name="pa-timeframe" value="1H">
+                                        <label class="form-check-label ms-2" for="pa-tf-1h">1 Hour</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="pivot-timeframe-select" class="form-label">Select Pivot Timeframe</label>
+                                <select class="form-select" id="pivot-timeframe-select" name="pivot-timeframe">
+                                    <option value="5m">5 Minutes</option>
+                                    <option value="15m" selected>15 Minutes</option>
+                                    <option value="30m">30 Minutes</option>
+                                    <option value="1H">1 Hour</option>
+                                </select>
+                                <div class="form-text">The pivot timeframe will be validated against other selected timeframes</div>
+                            </div>
+                            
+                            <button type="button" id="analyze-price-action-btn" class="btn btn-primary analysis-btn" disabled>
+                                <i class="fas fa-search me-2"></i>Analyze Price Action
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Price Action Statistics</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="stats-card card bg-success-subtle">
+                                    <div class="card-body">
+                                        <div class="stats-value" id="valid-patterns">0</div>
+                                        <div class="stats-label">Valid Patterns</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card card bg-danger-subtle">
+                                    <div class="card-body">
+                                        <div class="stats-value" id="invalid-patterns">0</div>
+                                        <div class="stats-label">Invalid Patterns</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card card bg-secondary-subtle">
+                                    <div class="card-body">
+                                        <div class="stats-value" id="pending-patterns">0</div>
+                                        <div class="stats-label">Pending Validation</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive mt-3">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Timeframe</th>
+                                        <th>HH</th>
+                                        <th>HL</th>
+                                        <th>LH</th>
+                                        <th>LL</th>
+                                        <th>BOS</th>
+                                        <th>CHoCH</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pattern-stats-body">
+                                    <tr>
+                                        <td colspan="8" class="text-center">No data available</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <h6>Pattern Legend</h6>
+                            <div class="d-flex flex-wrap gap-3">
+                                <div><span class="pattern-indicator pattern-hh"></span> HH: Higher High</div>
+                                <div><span class="pattern-indicator pattern-hl"></span> HL: Higher Low</div>
+                                <div><span class="pattern-indicator pattern-lh"></span> LH: Lower High</div>
+                                <div><span class="pattern-indicator pattern-ll"></span> LL: Lower Low</div>
+                                <div><span class="pattern-indicator pattern-bos"></span> BOS: Break of Structure</div>
+                                <div><span class="pattern-indicator pattern-choch"></span> CHoCH: Change of Character</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fair Value Gap Tab -->
+    <div class="tab-pane fade" id="fvg" role="tabpanel">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Fair Value Gap Analysis</div>
+                    <div class="card-body">
+                        <form id="fvg-form">
+                            <div class="mb-3">
+                                <label for="fvg-timeframe-select" class="form-label">Select Timeframe for FVG Analysis</label>
+                                <select class="form-select" id="fvg-timeframe-select" name="fvg-timeframe">
+                                    <option value="5m">5 Minutes</option>
+                                    <option value="15m" selected>15 Minutes</option>
+                                    <option value="30m">30 Minutes</option>
+                                    <option value="1H">1 Hour</option>
+                                </select>
+                            </div>
+                            
+                            <button type="button" id="analyze-fvg-btn" class="btn btn-primary analysis-btn" disabled>
+                                <i class="fas fa-search me-2"></i>Find Fair Value Gaps
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header">About Fair Value Gaps (FVGs)</div>
+                    <div class="card-body">
+                        <p>Fair Value Gaps (FVGs) are areas on the chart where price has moved so quickly that it has left a gap in the market. These are often key areas where price may return to "fill the gap".</p>
+                        
+                        <h6>Types of FVGs:</h6>
+                        <ul>
+                            <li><strong>Bullish FVG:</strong> When the low of a candle is higher than the high of the candle two bars later</li>
+                            <li><strong>Bearish FVG:</strong> When the high of a candle is lower than the low of the candle two bars later</li>
+                        </ul>
+                        
+                        <p>FVGs are often treated as magnets for price and can be used as support/resistance areas or targets for trade entries and exits.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">FVG Usage in Trading</div>
+                    <div class="card-body">
+                        <h6>How to use FVGs in your trading:</h6>
+                        <ol>
+                            <li><strong>Support/Resistance:</strong> FVGs often act as support or resistance when price returns to test them</li>
+                            <li><strong>Trade Entries:</strong> Enter trades when price returns to an FVG, especially if it aligns with other patterns</li>
+                            <li><strong>Take Profit Targets:</strong> Use FVGs as potential take profit areas</li>
+                            <li><strong>Order Blocks:</strong> FVGs that form after a strong move often create order blocks</li>
+                        </ol>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            To find trade opportunities that combine CHoCH patterns with FVGs, use the Trade Opportunities tab.
+                        </div>
+                        
+                        <div class="mt-3">
+                            <h6>Fill Percentage</h6>
+                            <p>The fill percentage indicates how much of the gap has been filled by subsequent price action:</p>
+                            <ul>
+                                <li>0% - The gap has not been touched yet</li>
+                                <li>50% - Half of the gap has been filled</li>
+                                <li>100% - The gap has been completely filled</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Trade Opportunities Tab -->
+    <div class="tab-pane fade" id="opportunities" role="tabpanel">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Find Trade Opportunities</div>
+                    <div class="card-body">
+                        <form id="opportunities-form">
+                            <div class="mb-3">
+                                <label for="choch-timeframe-select" class="form-label">CHoCH Pattern Timeframe</label>
+                                <select class="form-select" id="choch-timeframe-select" name="choch-timeframe">
+                                    <option value="15m" selected>15 Minutes</option>
+                                    <option value="30m">30 Minutes</option>
+                                    <option value="1H">1 Hour</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="fvg-opp-timeframe-select" class="form-label">FVG Timeframe (Lower)</label>
+                                <select class="form-select" id="fvg-opp-timeframe-select" name="fvg-opp-timeframe">
+                                    <option value="5m" selected>5 Minutes</option>
+                                    <option value="15m">15 Minutes</option>
+                                </select>
+                            </div>
+                            
+                            <div class="alert alert-secondary">
+                                <small>
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    The system will look for CHoCH patterns on the selected timeframe, then find the first FVG on the lower timeframe that occurs after the CHoCH.
+                                </small>
+                            </div>
+                            
+                            <button type="button" id="analyze-opportunities-btn" class="btn btn-primary analysis-btn" disabled>
+                                <i class="fas fa-search-dollar me-2"></i>Find Trade Opportunities
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="stats-card card">
+                            <div class="card-body">
+                                <div class="stats-value" id="total-opportunities">0</div>
+                                <div class="stats-label">Total Opportunities</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stats-card card">
+                            <div class="card-body">
+                                <div class="stats-value" id="win-rate">0%</div>
+                                <div class="stats-label">Win Rate</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="stats-card card bg-success-subtle">
+                            <div class="card-body">
+                                <div class="stats-value" id="win-count">0</div>
+                                <div class="stats-label">Wins</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card card bg-danger-subtle">
+                            <div class="card-body">
+                                <div class="stats-value" id="loss-count">0</div>
+                                <div class="stats-label">Losses</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card card bg-info-subtle">
+                            <div class="card-body">
+                                <div class="stats-value" id="expectancy">0</div>
+                                <div class="stats-label">Expectancy (R)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header">Timeframe Statistics</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Timeframe</th>
+                                        <th>Count</th>
+                                        <th>Wins</th>
+                                        <th>Losses</th>
+                                        <th>Win Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="timeframe-stats-body">
+                                    <tr>
+                                        <td colspan="5" class="text-center">No data available</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Trade Opportunities</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Pattern</th>
+                                        <th>FVG TF</th>
+                                        <th>Entry</th>
+                                        <th>SL</th>
+                                        <th>TP</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="opportunities-table-body">
+                                    <tr>
+                                        <td colspan="7" class="text-center">No trade opportunities found</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Risk/Reward Ratio:</strong> All trades use a 1:2 risk to reward ratio, where the take profit is set at twice the distance from entry to stop loss.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
